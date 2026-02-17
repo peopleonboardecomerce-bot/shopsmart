@@ -1,0 +1,19 @@
+project_id = "bvfwkeeesactgedaiiwb"
+
+[functions.get-user-emails]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.create-mp-preference]
+verify_jwt = false
+
+[functions.correo-argentino]
+verify_jwt = false
+
+[functions.send-whatsapp]
+verify_jwt = false
+
+[functions.notify-order-whatsapp]
+verify_jwt = false
