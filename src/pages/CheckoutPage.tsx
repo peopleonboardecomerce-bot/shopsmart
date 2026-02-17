@@ -112,19 +112,41 @@ const CheckoutPage = () => {
         quantity: item.quantity,
       }));
 
-      const { data, error } = await supabase.functions.invoke("create-mp-preference", {
-        body: {
-          items: orderItems,
-          shippingAddress: {
-            ...shippingData,
-            shippingMethod: deliveryMethod === "whatsapp" ? "whatsapp_manual" : shippingData.shippingMethod,
+      // 1) Obtener el JWT real del usuario logueado
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
+      }
+
+      // 2) Invocar la Edge Function enviando el Bearer correcto
+      const { data, error } = await supabase.functions.invoke(
+        "create-mp-preference",
+        {
+          body: {
+            items: orderItems,
+            shippingAddress: {
+              ...shippingData,
+              shippingMethod:
+                deliveryMethod === "whatsapp"
+                  ? "whatsapp_manual"
+                  : shippingData.shippingMethod,
+            },
+            total,
+            shippingCost: getShippingCost(),
+            deliveryMethod,
+            shippingNote:
+              deliveryMethod === "whatsapp" ? "Envío a coordinar" : undefined,
           },
-          total,
-          shippingCost: getShippingCost(),
-          deliveryMethod,
-          shippingNote: deliveryMethod === "whatsapp" ? "Envío a coordinar" : undefined,
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         },
-      });
+      );
+
 
       if (error || !data?.init_point) {
         throw new Error(data?.error || "Error al crear el pago");
