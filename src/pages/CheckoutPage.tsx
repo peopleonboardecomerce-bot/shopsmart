@@ -151,7 +151,7 @@ const CheckoutPage = () => {
       }
 
       clearCart();
-      window.location.href = data.sandbox_init_point || data.init_point;
+      window.location.href = data.init_point;
     } catch (error: any) {
       console.error("Error creating order:", error);
       toast.error(error.message || "Error al procesar el pedido. Por favor, inténtalo de nuevo.");
