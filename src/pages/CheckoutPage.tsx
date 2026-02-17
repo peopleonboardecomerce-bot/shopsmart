@@ -122,9 +122,7 @@ const CheckoutPage = () => {
         throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
       }
 
-      // 2) Invocar la Edge Function enviando el Bearer correcto
-      const { data, error } = await supabase.functions.invoke(
-        "create-mp-preference",
+      const { data, error } = await supabase.functions.invoke("create-mp-preference",
         {
           body: {
             items: orderItems,
@@ -144,8 +142,8 @@ const CheckoutPage = () => {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
-        },
-      );
+        });
+      
 
 
       if (error || !data?.init_point) {
