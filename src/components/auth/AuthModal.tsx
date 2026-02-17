@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { lovable } from "@/integrations/lovable/index";
+import { auth } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -164,8 +164,8 @@ export const AuthModal = ({ onSuccess, initialMode = "login" }: AuthModalProps) 
         disabled={loading}
         onClick={async () => {
           setLoading(true);
-          const { error } = await lovable.auth.signInWithOAuth("google", {
-            redirect_uri: window.location.origin,
+            const { error } = await auth.signInWithOAuth("google", {
+            redirectTo: window.location.origin,
           });
           if (error) {
             toast.error("Error al iniciar sesión con Google");
