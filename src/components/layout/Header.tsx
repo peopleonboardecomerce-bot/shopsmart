@@ -39,7 +39,8 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="container flex h-16 items-center justify-between gap-4">
+      {/* mobile-first container with horizontal padding and max width */}
+      <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <span className="font-serif text-2xl font-bold text-primary">PeopleOnBoard</span>
