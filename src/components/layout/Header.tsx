@@ -114,7 +114,7 @@ export const Header = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <span className="font-serif text-2xl font-bold text-primary">
-            PeopleOnBoard
+            PeopleOB
           </span>
         </Link>
 
