@@ -8,7 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { PackageIcon, AlertCircle, ShoppingBag, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 interface Order {
@@ -39,10 +45,14 @@ const OrderHistoryPage = () => {
 
     const fetchOrders = async () => {
       try {
+        setError(null);
         setLoading(true);
+
         let query = supabase
           .from("orders")
-          .select("id, created_at, total, status, payment_status, payment_status_detail, items")
+          .select(
+            "id, created_at, total, status, payment_status, payment_status_detail, items",
+          )
           .eq("user_id", user.id);
 
         // Apply filters
@@ -58,8 +68,8 @@ const OrderHistoryPage = () => {
         query = query.order("created_at", { ascending });
 
         const { data, error } = await query;
-
         if (error) throw error;
+
         setOrders((data as Order[]) || []);
       } catch (err: any) {
         setError(err.message || "Error al cargar los pedidos");
@@ -152,22 +162,52 @@ const OrderHistoryPage = () => {
 
   return (
     <Layout>
-      <div className="container py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <PackageIcon className="h-8 w-8 text-primary" />
-          <h1 className="font-serif text-3xl font-bold">Mis Pedidos</h1>
+      <div className="container py-6 sm:py-8">
+        {/* Header responsive */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+          <div className="flex items-center gap-3">
+            <PackageIcon className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold">
+              Mis Pedidos
+            </h1>
+          </div>
         </div>
 
-        {/* Filters Section */}
+        {/* Error (no altera lógica, sólo UI) */}
+        {error && (
+          <Card className="mb-6 border-destructive/30">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // trigger refetch by toggling sort twice without changing final value
+                    setSortBy((prev) => (prev === "date-desc" ? "date-asc" : "date-desc"));
+                    setTimeout(() => setSortBy((prev) => (prev === "date-desc" ? "date-asc" : "date-desc")), 0);
+                  }}
+                >
+                  Reintentar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Filters Section (responsive grid + full width controls on mobile) */}
         <Card className="mb-6 border-border">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sort-by" className="text-sm font-medium">
                   Ordenar por
                 </Label>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger id="sort-by">
+                <Select
+                  value={sortBy}
+                  onValueChange={(value: any) => setSortBy(value)}
+                >
+                  <SelectTrigger id="sort-by" className="w-full">
                     <SelectValue placeholder="Selecciona ordenamiento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -181,8 +221,11 @@ const OrderHistoryPage = () => {
                 <Label htmlFor="payment-status" className="text-sm font-medium">
                   Estado de pago
                 </Label>
-                <Select value={filterPaymentStatus} onValueChange={setFilterPaymentStatus}>
-                  <SelectTrigger id="payment-status">
+                <Select
+                  value={filterPaymentStatus}
+                  onValueChange={setFilterPaymentStatus}
+                >
+                  <SelectTrigger id="payment-status" className="w-full">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -198,8 +241,11 @@ const OrderHistoryPage = () => {
                 <Label htmlFor="order-status" className="text-sm font-medium">
                   Estado del pedido
                 </Label>
-                <Select value={filterOrderStatus} onValueChange={setFilterOrderStatus}>
-                  <SelectTrigger id="order-status">
+                <Select
+                  value={filterOrderStatus}
+                  onValueChange={setFilterOrderStatus}
+                >
+                  <SelectTrigger id="order-status" className="w-full">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,8 +260,10 @@ const OrderHistoryPage = () => {
               </div>
             </div>
 
-            {/* Clear Filters Button */}
-            {(filterPaymentStatus !== "all" || filterOrderStatus !== "all" || sortBy !== "date-desc") && (
+            {/* Clear Filters Button (full width on mobile) */}
+            {(filterPaymentStatus !== "all" ||
+              filterOrderStatus !== "all" ||
+              sortBy !== "date-desc") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -224,7 +272,7 @@ const OrderHistoryPage = () => {
                   setFilterPaymentStatus("all");
                   setFilterOrderStatus("all");
                 }}
-                className="mt-4"
+                className="mt-4 w-full sm:w-auto"
               >
                 <X className="mr-2 h-4 w-4" />
                 Limpiar filtros
@@ -250,16 +298,24 @@ const OrderHistoryPage = () => {
         ) : orders.length > 0 ? (
           <div className="space-y-4">
             {orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={order.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Número de pedido</p>
-                      <p className="font-mono text-sm font-semibold">{order.id.slice(0, 8)}...</p>
+                  {/* Summary: switches to stacked layout on mobile */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="min-w-0">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Número de pedido
+                      </p>
+                      <p className="font-mono text-sm font-semibold truncate">
+                        {order.id.slice(0, 8)}...
+                      </p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm text-muted-foreground mb-1">Fecha</p>
-                      <p className="font-medium">
+                      <p className="font-medium break-words">
                         {new Date(order.created_at).toLocaleDateString("es-ES", {
                           year: "numeric",
                           month: "long",
@@ -269,7 +325,9 @@ const OrderHistoryPage = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Total</p>
-                      <p className="font-bold text-lg">${order.total.toFixed(2)}</p>
+                      <p className="font-bold text-lg">
+                        ${order.total.toFixed(2)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Estado</p>
@@ -281,31 +339,51 @@ const OrderHistoryPage = () => {
 
                   {/* Items */}
                   <div className="border-t border-border pt-4 mb-4">
-                    <p className="text-sm font-semibold text-muted-foreground mb-3">Productos</p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-3">
+                      Productos
+                    </p>
                     <div className="space-y-2">
-                      {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
-                        <div key={idx} className="text-sm">
-                          <p className="text-foreground">
-                            {item.title} <span className="text-muted-foreground">x{item.quantity}</span>
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            ${item.price.toFixed(2)} c/u
-                          </p>
-                        </div>
-                      ))}
+                      {Array.isArray(order.items) &&
+                        order.items.map((item: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="text-sm flex items-start justify-between gap-3"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-foreground break-words">
+                                {item.title}{" "}
+                                <span className="text-muted-foreground">
+                                  x{item.quantity}
+                                </span>
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                ${item.price.toFixed(2)} c/u
+                              </p>
+                            </div>
+                            <p className="text-sm font-medium whitespace-nowrap">
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </p>
+                          </div>
+                        ))}
                     </div>
                   </div>
 
-                  {/* Payment Status */}
-                  <div className="border-t border-border pt-4 flex items-center justify-between">
+                  {/* Payment Status (stack on mobile) */}
+                  <div className="border-t border-border pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Estado del pago</p>
-                      <Badge variant={getPaymentStatusBadgeVariant(order.payment_status)}>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Estado del pago
+                      </p>
+                      <Badge
+                        variant={getPaymentStatusBadgeVariant(order.payment_status)}
+                      >
                         {getPaymentStatusLabel(order.payment_status)}
                       </Badge>
                     </div>
                     {order.payment_status_detail && (
-                      <p className="text-xs text-muted-foreground">{order.payment_status_detail}</p>
+                      <p className="text-xs text-muted-foreground break-words sm:text-right">
+                        {order.payment_status_detail}
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -317,11 +395,13 @@ const OrderHistoryPage = () => {
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
               <ShoppingBag className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-medium mb-2">Aún no has realizado compras</h2>
+            <h2 className="text-xl font-medium mb-2">
+              Aún no has realizado compras
+            </h2>
             <p className="text-muted-foreground mb-6 max-w-md">
               Explora nuestra tienda y realiza tu primer pedido.
             </p>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link to="/products">
                 <ShoppingBag className="mr-2 h-5 w-5" />
                 Ver productos

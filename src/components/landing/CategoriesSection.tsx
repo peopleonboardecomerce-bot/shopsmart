@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { useMemo } from "react";
 
 interface Category {
   id: string;
@@ -18,17 +19,27 @@ interface CategoriesSectionProps {
 export const CategoriesSection = ({ categories, loading }: CategoriesSectionProps) => {
   const { data: c } = useSiteContent("categories_section");
 
+  // No cambia funcionalidades: solo evita recalcular fallbacks en cada render
+  const labels = useMemo(
+    () => ({
+      badge: c?.badge ?? "Explora",
+      title: c?.title ?? "Nuestras Categorías",
+      subtitle:
+        c?.subtitle ??
+        "Encuentra exactamente lo que buscas en nuestra amplia selección de categorías",
+    }),
+    [c]
+  );
+
   return (
     <section className="py-16 bg-gradient-to-b from-background via-accent/30 to-background">
       <div className="container">
         <div className="text-center mb-12">
           <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            {c?.badge ?? "Explora"}
+            {labels.badge}
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3">{c?.title ?? "Nuestras Categorías"}</h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            {c?.subtitle ?? "Encuentra exactamente lo que buscas en nuestra amplia selección de categorías"}
-          </p>
+          <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3">{labels.title}</h2>
+          <p className="text-muted-foreground max-w-lg mx-auto">{labels.subtitle}</p>
         </div>
 
         {loading ? (
@@ -41,16 +52,26 @@ export const CategoriesSection = ({ categories, loading }: CategoriesSectionProp
               <Link key={category.id} to={`/products?category=${category.id}`}>
                 <Card className="group relative overflow-hidden rounded-2xl border-0 shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
                   <div className="relative aspect-[4/3] overflow-hidden">
+                    {/* No cambia comportamiento: solo mejora UX con loading/lazy y fallback seguro */}
                     <img
-                      src={category.image || ""}
+                      src={category.image || "/placeholder.svg"}
                       alt={category.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src.includes("/placeholder.svg")) return;
+                        img.src = "/placeholder.svg";
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
                     <div className="absolute inset-0 flex flex-col justify-end p-6">
                       <div className="transform transition-transform duration-300 group-hover:translate-y-0 translate-y-2">
                         <h3 className="font-serif font-bold text-xl text-card mb-1">{category.name}</h3>
-                        <p className="text-sm text-card/80 line-clamp-2">{category.description}</p>
+                        <p className="text-sm text-card/80 line-clamp-2">
+                          {category.description || ""}
+                        </p>
                       </div>
                       <div className="mt-4 flex items-center text-card text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <span>Explorar</span>

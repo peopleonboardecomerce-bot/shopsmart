@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { ShippingForm, ShippingData, shippingSchema } from "@/components/checkout/ShippingForm";
+import {
+  ShippingForm,
+  ShippingData,
+  shippingSchema,
+} from "@/components/checkout/ShippingForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useShippingConfig } from "@/hooks/useShippingConfig";
@@ -19,19 +24,23 @@ const CheckoutPage = () => {
   const { items, subtotal, clearCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const shippingConfig = useShippingConfig();
+
   const [loading, setLoading] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup" | "whatsapp">(
-    shippingConfig.mode === "manual" ? "whatsapp" : "shipping"
-  );
+  const [deliveryMethod, setDeliveryMethod] = useState<
+    "shipping" | "pickup" | "whatsapp"
+  >(shippingConfig.mode === "manual" ? "whatsapp" : "shipping");
   const [shippingCost, setShippingCost] = useState(0);
+
   const [shippingData, setShippingData] = useState<ShippingData>({
-    fullName: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "",
+    fullName:
+      user?.user_metadata?.full_name || user?.email?.split("@")[0] || "",
     address: "",
     city: "",
     postalCode: "",
     phone: "",
     shippingMethod: "",
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!isAuthenticated) {
@@ -59,9 +68,7 @@ const CheckoutPage = () => {
       const result = shippingSchema.safeParse(shippingData);
       if (!result.success) {
         result.error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0].toString()] = err.message;
-          }
+          if (err.path[0]) newErrors[err.path[0].toString()] = err.message;
         });
         setErrors(newErrors);
         toast.error("Por favor, completa todos los campos requeridos");
@@ -102,6 +109,7 @@ const CheckoutPage = () => {
       }
     }
 
+    setErrors({});
     setLoading(true);
 
     try {
@@ -122,7 +130,8 @@ const CheckoutPage = () => {
         throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
       }
 
-      const { data, error } = await supabase.functions.invoke("create-mp-preference",
+      const { data, error } = await supabase.functions.invoke(
+        "create-mp-preference",
         {
           body: {
             items: orderItems,
@@ -142,9 +151,8 @@ const CheckoutPage = () => {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
-        });
-      
-
+        },
+      );
 
       if (error || !data?.init_point) {
         throw new Error(data?.error || "Error al crear el pago");
@@ -154,7 +162,10 @@ const CheckoutPage = () => {
       window.location.href = data.init_point;
     } catch (error: any) {
       console.error("Error creating order:", error);
-      toast.error(error.message || "Error al procesar el pedido. Por favor, inténtalo de nuevo.");
+      toast.error(
+        error.message ||
+          "Error al procesar el pedido. Por favor, inténtalo de nuevo.",
+      );
     } finally {
       setLoading(false);
     }
@@ -162,45 +173,67 @@ const CheckoutPage = () => {
 
   return (
     <Layout>
-      <div className="container py-8">
-        <h1 className="font-serif text-3xl font-bold mb-8">Checkout</h1>
+      <div className="container py-6 sm:py-8 px-4">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
+          Checkout
+        </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Form Section */}
           <div className="lg:col-span-2 space-y-6">
             {/* Delivery Method */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Método de entrega</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg">
+                  Método de entrega
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <RadioGroup
                   value={deliveryMethod}
                   onValueChange={(v) => {
-                    setDeliveryMethod(v as "shipping" | "pickup" | "whatsapp");
-                    if (v === "pickup") setShippingCost(0);
+                    const next = v as "shipping" | "pickup" | "whatsapp";
+                    setDeliveryMethod(next);
+
+                    // Keep behavior unchanged
+                    if (next === "pickup") setShippingCost(0);
+
+                    // UX: clear form errors when changing method (no functional impact)
+                    setErrors({});
                   }}
                   className="space-y-3"
                 >
                   {/* WhatsApp manual shipping */}
                   {shippingConfig.mode === "manual" && (
                     <div
-                      className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                        deliveryMethod === "whatsapp" ? "border-primary bg-accent/50" : "border-border"
+                      className={`flex items-start gap-3 sm:gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
+                        deliveryMethod === "whatsapp"
+                          ? "border-primary bg-accent/50"
+                          : "border-border"
                       }`}
                     >
-                      <RadioGroupItem value="whatsapp" id="whatsapp" />
-                      <Label htmlFor="whatsapp" className="flex-1 cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <MessageCircle className="h-5 w-5 text-green-600" />
-                          <div>
-                            <p className="font-medium">{shippingConfig.manualLabel}</p>
+                      <RadioGroupItem
+                        value="whatsapp"
+                        id="whatsapp"
+                        className="mt-1"
+                      />
+                      <Label
+                        htmlFor="whatsapp"
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <MessageCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="font-medium">
+                              {shippingConfig.manualLabel}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               {shippingConfig.manualDescription}
                             </p>
                             {shippingConfig.basePrice > 0 && (
                               <p className="text-sm font-medium mt-1">
-                                Costo base: ${shippingConfig.basePrice.toFixed(2)}
+                                Costo base: $
+                                {shippingConfig.basePrice.toFixed(2)}
                               </p>
                             )}
                           </div>
@@ -212,16 +245,27 @@ const CheckoutPage = () => {
                   {/* Correo Argentino API shipping */}
                   {shippingConfig.mode === "api" && (
                     <div
-                      className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                        deliveryMethod === "shipping" ? "border-primary bg-accent/50" : "border-border"
+                      className={`flex items-start gap-3 sm:gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
+                        deliveryMethod === "shipping"
+                          ? "border-primary bg-accent/50"
+                          : "border-border"
                       }`}
                     >
-                      <RadioGroupItem value="shipping" id="shipping" />
-                      <Label htmlFor="shipping" className="flex-1 cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Truck className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-medium">Envío a domicilio (Correo Argentino)</p>
+                      <RadioGroupItem
+                        value="shipping"
+                        id="shipping"
+                        className="mt-1"
+                      />
+                      <Label
+                        htmlFor="shipping"
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Truck className="h-5 w-5 text-primary mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="font-medium">
+                              Envío a domicilio (Correo Argentino)
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               Cotización en tiempo real según tu código postal
                             </p>
@@ -232,15 +276,21 @@ const CheckoutPage = () => {
                   )}
 
                   <div
-                    className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      deliveryMethod === "pickup" ? "border-primary bg-accent/50" : "border-border"
+                    className={`flex items-start gap-3 sm:gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
+                      deliveryMethod === "pickup"
+                        ? "border-primary bg-accent/50"
+                        : "border-border"
                     }`}
                   >
-                    <RadioGroupItem value="pickup" id="pickup" />
+                    <RadioGroupItem
+                      value="pickup"
+                      id="pickup"
+                      className="mt-1"
+                    />
                     <Label htmlFor="pickup" className="flex-1 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <Store className="h-5 w-5 text-primary" />
-                        <div>
+                      <div className="flex items-start gap-3">
+                        <Store className="h-5 w-5 text-primary mt-0.5" />
+                        <div className="min-w-0">
                           <p className="font-medium">Retiro en tienda</p>
                           <p className="text-sm text-muted-foreground">
                             Gratis - Retira en nuestra tienda principal
@@ -256,8 +306,10 @@ const CheckoutPage = () => {
             {/* Address form for WhatsApp shipping */}
             {deliveryMethod === "whatsapp" && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Datos de envío</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base sm:text-lg">
+                    Datos de envío
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <WhatsAppShippingForm
@@ -272,8 +324,10 @@ const CheckoutPage = () => {
             {/* Correo Argentino Shipping Form */}
             {deliveryMethod === "shipping" && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Datos de envío</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base sm:text-lg">
+                    Datos de envío
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ShippingForm
@@ -288,8 +342,10 @@ const CheckoutPage = () => {
 
             {deliveryMethod === "pickup" && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Ubicación de retiro</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base sm:text-lg">
+                    Ubicación de retiro
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-muted rounded-lg">
@@ -307,25 +363,31 @@ const CheckoutPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div>
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-lg">Resumen del pedido</CardTitle>
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg">
+                  Resumen del pedido
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3 max-h-64 overflow-y-auto">
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                   {items.map((item) => (
                     <div key={item.product.id} className="flex gap-3">
                       <img
                         src={item.product.images[0]}
                         alt={item.product.title}
-                        className="w-12 h-12 rounded object-cover"
+                        className="w-12 h-12 rounded object-cover shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-1">{item.product.title}</p>
-                        <p className="text-sm text-muted-foreground">x{item.quantity}</p>
+                        <p className="text-sm font-medium line-clamp-1">
+                          {item.product.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          x{item.quantity}
+                        </p>
                       </div>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium whitespace-nowrap">
                         ${(item.product.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
@@ -335,38 +397,41 @@ const CheckoutPage = () => {
                 <Separator />
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-sm gap-4">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span className="whitespace-nowrap">
+                      ${subtotal.toFixed(2)}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-sm gap-4">
                     <span className="text-muted-foreground">Envío</span>
-                    <span>
+                    <span className="whitespace-nowrap">
                       {deliveryMethod === "pickup"
                         ? "Gratis"
                         : deliveryMethod === "whatsapp"
-                        ? shippingConfig.basePrice > 0
-                          ? `$${shippingConfig.basePrice.toFixed(2)}`
-                          : "A coordinar"
-                        : shippingCost > 0
-                        ? `$${shippingCost.toFixed(2)}`
-                        : "Cotizar"}
+                          ? shippingConfig.basePrice > 0
+                            ? `$${shippingConfig.basePrice.toFixed(2)}`
+                            : "A coordinar"
+                          : shippingCost > 0
+                            ? `$${shippingCost.toFixed(2)}`
+                            : "Cotizar"}
                     </span>
                   </div>
                 </div>
 
                 <Separator />
 
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between font-bold text-base sm:text-lg gap-4">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span className="whitespace-nowrap">${total.toFixed(2)}</span>
                 </div>
 
-                {deliveryMethod === "whatsapp" && shippingConfig.basePrice === 0 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    * El costo final de envío se coordinará por WhatsApp
-                  </p>
-                )}
+                {deliveryMethod === "whatsapp" &&
+                  shippingConfig.basePrice === 0 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      * El costo final de envío se coordinará por WhatsApp
+                    </p>
+                  )}
 
                 <Button
                   className="w-full"
@@ -374,7 +439,9 @@ const CheckoutPage = () => {
                   onClick={handleSubmit}
                   disabled={loading}
                 >
-                  {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  {loading && (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  )}
                   {loading ? "Procesando..." : "Pagar con Mercado Pago"}
                 </Button>
 
@@ -391,8 +458,6 @@ const CheckoutPage = () => {
 };
 
 // Simple address form for WhatsApp manual shipping (no shipping method selection needed)
-import { Input } from "@/components/ui/input";
-
 const WhatsAppShippingForm = ({
   data,
   errors,
@@ -411,9 +476,13 @@ const WhatsAppShippingForm = ({
           value={data.fullName}
           onChange={(e) => onChange({ ...data, fullName: e.target.value })}
           placeholder="Juan García"
+          autoComplete="name"
         />
-        {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+        {errors.fullName && (
+          <p className="text-sm text-destructive">{errors.fullName}</p>
+        )}
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="phone">Teléfono</Label>
         <Input
@@ -422,10 +491,14 @@ const WhatsAppShippingForm = ({
           value={data.phone}
           onChange={(e) => onChange({ ...data, phone: e.target.value })}
           placeholder="+54 11 1234-5678"
+          autoComplete="tel"
         />
-        {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+        {errors.phone && (
+          <p className="text-sm text-destructive">{errors.phone}</p>
+        )}
       </div>
     </div>
+
     <div className="space-y-2">
       <Label htmlFor="address">Dirección</Label>
       <Input
@@ -433,9 +506,13 @@ const WhatsAppShippingForm = ({
         value={data.address}
         onChange={(e) => onChange({ ...data, address: e.target.value })}
         placeholder="Av. Corrientes 1234, Piso 2B"
+        autoComplete="street-address"
       />
-      {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+      {errors.address && (
+        <p className="text-sm text-destructive">{errors.address}</p>
+      )}
     </div>
+
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="city">Ciudad</Label>
@@ -444,9 +521,13 @@ const WhatsAppShippingForm = ({
           value={data.city}
           onChange={(e) => onChange({ ...data, city: e.target.value })}
           placeholder="Buenos Aires"
+          autoComplete="address-level2"
         />
-        {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
+        {errors.city && (
+          <p className="text-sm text-destructive">{errors.city}</p>
+        )}
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="postalCode">Código postal</Label>
         <Input
@@ -454,8 +535,12 @@ const WhatsAppShippingForm = ({
           value={data.postalCode}
           onChange={(e) => onChange({ ...data, postalCode: e.target.value })}
           placeholder="1000"
+          inputMode="numeric"
+          autoComplete="postal-code"
         />
-        {errors.postalCode && <p className="text-sm text-destructive">{errors.postalCode}</p>}
+        {errors.postalCode && (
+          <p className="text-sm text-destructive">{errors.postalCode}</p>
+        )}
       </div>
     </div>
   </div>

@@ -137,29 +137,43 @@ export const CategoriesPage = () => {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-serif text-3xl font-bold">Categorías</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold truncate">
+            Categorías
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Administra las categorías de tu tienda.
+          </p>
+        </div>
+
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
+            <Button onClick={openCreateDialog} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nueva Categoría
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+
+          {/* ✅ Responsive dialog: full width on mobile, max width on desktop */}
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>
                 {editingCategory ? "Editar Categoría" : "Nueva Categoría"}
               </DialogTitle>
             </DialogHeader>
+
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Nombre de la categoría"
                 />
               </div>
@@ -169,7 +183,9 @@ export const CategoriesPage = () => {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   placeholder="Descripción de la categoría"
                 />
@@ -180,17 +196,30 @@ export const CategoriesPage = () => {
                 <Input
                   id="image"
                   value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, image: e.target.value })
+                  }
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {/* ✅ Buttons stack on mobile */}
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="w-full sm:w-auto"
+                >
                   Cancelar
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full sm:w-auto"
+                >
+                  {saving && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
                   {editingCategory ? "Guardar cambios" : "Crear categoría"}
                 </Button>
               </div>
@@ -199,12 +228,13 @@ export const CategoriesPage = () => {
         </Dialog>
       </div>
 
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">No hay categorías todavía.</p>
           <Button onClick={openCreateDialog} className="mt-4">
             <Plus className="h-4 w-4 mr-2" />
@@ -212,58 +242,78 @@ export const CategoriesPage = () => {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Imagen</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="w-24">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell>
-                    {category.image ? (
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                        <FolderOpen className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {category.description || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(category)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(category.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <div className="rounded-lg border overflow-hidden">
+          {/* ✅ Mobile: horizontal scroll only for table */}
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[720px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[96px]">Imagen</TableHead>
+                  <TableHead className="min-w-[200px]">Nombre</TableHead>
+                  <TableHead className="min-w-[280px]">Descripción</TableHead>
+                  <TableHead className="w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell>
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-12 h-12 object-cover rounded"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <FolderOpen className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="font-medium">
+                      <span className="block max-w-[260px] truncate">
+                        {category.name}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-muted-foreground">
+                      <span className="block max-w-[380px] truncate">
+                        {category.description || "-"}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(category)}
+                          aria-label="Editar categoría"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(category.id)}
+                          aria-label="Eliminar categoría"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* ✅ Small helper text on mobile */}
+          <div className="px-4 py-3 text-xs text-muted-foreground border-t sm:hidden">
+            Deslizá horizontalmente para ver toda la tabla.
+          </div>
         </div>
       )}
     </div>

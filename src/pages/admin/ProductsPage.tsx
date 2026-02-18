@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,7 +71,15 @@ export const ProductsPage = () => {
   const [saving, setSaving] = useState(false);
   const { categories } = useCategories();
 
+  const categoriesById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of categories) map.set(c.id, c.name);
+    return map;
+  }, [categories]);
+
   const fetchProducts = async () => {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("products")
       .select("*")
@@ -180,37 +188,56 @@ export const ProductsPage = () => {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-serif text-3xl font-bold">Productos</h1>
+    <div className="space-y-6">
+      {/* Header responsive */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold truncate">
+            Productos
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Crea, edita y administra tus productos.
+          </p>
+        </div>
+
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
+            <Button onClick={openCreateDialog} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Producto
+              Nuevo Productooooo
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+
+          {/* ✅ Responsive dialog: full width on mobile + internal scroll */}
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90svh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? "Editar Producto" : "Nuevo Producto"}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid gap-4 md:grid-cols-2">
+
+            <div className="space-y-5 py-4">
+              {/* Top: title + category */}
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="title">Título *</Label>
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Nombre del producto"
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoría *</Label>
-                  <Select 
-                    value={formData.category_id} 
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                  <Select
+                    value={formData.category_id}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar categoría" />
@@ -226,39 +253,78 @@ export const ProductsPage = () => {
                 </div>
               </div>
 
+              {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={4}
+                  placeholder="Describe el producto (opcional)"
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              {/* Price / Original / Stock */}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="price">Precio *</Label>
                   <Input
                     id="price"
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        price: parseFloat(e.target.value) || 0,
+                      })
+                    }
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="original_price">Precio Original</Label>
                   <Input
                     id="original_price"
                     type="number"
                     step="0.01"
-                    value={formData.original_price || ""}
-                    onChange={(e) => setFormData({ ...formData, original_price: parseFloat(e.target.value) || null })}
+                    inputMode="decimal"
+                    value={formData.original_price ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        original_price: e.target.value
+                          ? parseFloat(e.target.value)
+                          : null,
+                      })
+                    }
+                    placeholder="(opcional)"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock *</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    inputMode="numeric"
+                    value={formData.stock}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        stock: parseInt(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* Rating / reviews */}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="rating">Puntuación (0-5)</Label>
                   <Input
@@ -267,34 +333,40 @@ export const ProductsPage = () => {
                     step="0.1"
                     min="0"
                     max="5"
+                    inputMode="decimal"
                     value={formData.rating ?? ""}
-                    onChange={(e) => setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : null })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        rating: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
                     placeholder="Ej: 4.5"
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="reviews_count">Número de reseñas</Label>
                   <Input
                     id="reviews_count"
                     type="number"
                     min="0"
+                    inputMode="numeric"
                     value={formData.reviews_count ?? ""}
-                    onChange={(e) => setFormData({ ...formData, reviews_count: e.target.value ? parseInt(e.target.value) : null })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        reviews_count: e.target.value
+                          ? parseInt(e.target.value)
+                          : null,
+                      })
+                    }
                     placeholder="Ej: 150"
                   />
                 </div>
               </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock *</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
 
+              {/* Images uploader */}
               <div className="space-y-2">
                 <Label>Imágenes del producto</Label>
                 <ProductImageUploader
@@ -303,30 +375,59 @@ export const ProductsPage = () => {
                 />
               </div>
 
-              <div className="flex gap-6">
-                <div className="flex items-center gap-2">
+              {/* Switches: stack on mobile */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                <div className="flex items-center justify-between sm:justify-start gap-3 rounded-lg border p-3 sm:p-0 sm:border-0">
+                  <div className="min-w-0">
+                    <Label htmlFor="featured" className="cursor-pointer">
+                      Destacado
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Se mostrará como producto destacado.
+                    </p>
+                  </div>
                   <Switch
                     id="featured"
                     checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, is_featured: checked })
+                    }
                   />
-                  <Label htmlFor="featured">Destacado</Label>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center justify-between sm:justify-start gap-3 rounded-lg border p-3 sm:p-0 sm:border-0">
+                  <div className="min-w-0">
+                    <Label htmlFor="bestseller" className="cursor-pointer">
+                      Más vendido
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Se mostrará como “más vendido”.
+                    </p>
+                  </div>
                   <Switch
                     id="bestseller"
                     checked={formData.is_bestseller}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_bestseller: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, is_bestseller: checked })
+                    }
                   />
-                  <Label htmlFor="bestseller">Más vendido</Label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {/* Actions: stack on mobile */}
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="w-full sm:w-auto"
+                >
                   Cancelar
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full sm:w-auto"
+                >
                   {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {editingProduct ? "Guardar cambios" : "Crear producto"}
                 </Button>
@@ -341,7 +442,7 @@ export const ProductsPage = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">No hay productos todavía.</p>
           <Button onClick={openCreateDialog} className="mt-4">
             <Plus className="h-4 w-4 mr-2" />
@@ -349,60 +450,86 @@ export const ProductsPage = () => {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Imagen</TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead className="w-24">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                        <Package className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{product.title}</TableCell>
-                  <TableCell>{categories.find(c => c.id === product.category_id)?.name || "-"}</TableCell>
-                  <TableCell>€{product.price.toFixed(2)}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(product)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <div className="rounded-lg border overflow-hidden">
+          {/* ✅ Mobile-friendly: horizontal scroll for table */}
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[920px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[110px]">Imagen</TableHead>
+                  <TableHead className="min-w-[260px]">Título</TableHead>
+                  <TableHead className="min-w-[220px]">Categoría</TableHead>
+                  <TableHead className="w-[140px]">Precio</TableHead>
+                  <TableHead className="w-[120px]">Stock</TableHead>
+                  <TableHead className="w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.title}
+                          className="w-12 h-12 object-cover rounded"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="font-medium">
+                      <span className="block max-w-[360px] truncate">
+                        {product.title}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-muted-foreground">
+                      {categoriesById.get(product.category_id) || "-"}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      €{product.price.toFixed(2)}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      {product.stock}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(product)}
+                          aria-label="Editar producto"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(product.id)}
+                          aria-label="Eliminar producto"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* ✅ Hint for small screens */}
+          <div className="px-4 py-3 text-xs text-muted-foreground border-t sm:hidden">
+            Deslizá horizontalmente para ver toda la tabla.
+          </div>
         </div>
       )}
     </div>

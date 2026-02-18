@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { useSiteContentAll, useUpdateSiteContent, SiteContentMap } from "@/hooks/useSiteContent";
+import {
+  useSiteContentAll,
+  useUpdateSiteContent,
+  SiteContentMap,
+} from "@/hooks/useSiteContent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,6 +88,7 @@ export const ContentPage = () => {
 
   const handleSave = async () => {
     if (!allContent) return;
+
     const updates: { section: string; key: string; value: string }[] = [];
     for (const section of Object.keys(editData)) {
       for (const key of Object.keys(editData[section])) {
@@ -92,10 +97,12 @@ export const ContentPage = () => {
         }
       }
     }
+
     if (updates.length === 0) {
       toast.info("No hay cambios para guardar");
       return;
     }
+
     try {
       await updateMutation.mutateAsync(updates);
       toast.success(`${updates.length} campo(s) actualizado(s)`);
@@ -117,12 +124,23 @@ export const ContentPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Contenido del sitio</h1>
-          <p className="text-muted-foreground">Edita los textos de la landing page, footer y métodos de envío</p>
+      {/* Header responsive */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            Contenido del sitio
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Edita los textos de la landing page, footer y métodos de envío
+          </p>
         </div>
-        <Button onClick={handleSave} disabled={!dirty || updateMutation.isPending}>
+
+        {/* Button full width on mobile */}
+        <Button
+          onClick={handleSave}
+          disabled={!dirty || updateMutation.isPending}
+          className="w-full sm:w-auto"
+        >
           {updateMutation.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -132,39 +150,91 @@ export const ContentPage = () => {
         </Button>
       </div>
 
+      {/* Tabs: horizontal scroll on mobile */}
       <Tabs defaultValue="hero">
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          {sections.map((s) => (
-            <TabsTrigger key={s} value={s} className="text-xs sm:text-sm">
-              {SECTION_LABELS[s]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="inline-flex h-auto w-max gap-1 whitespace-nowrap">
+            {sections.map((s) => (
+              <TabsTrigger
+                key={s}
+                value={s}
+                className="text-xs sm:text-sm"
+              >
+                {SECTION_LABELS[s]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {/* Helpful hint on very small screens */}
+        <div className="text-xs text-muted-foreground sm:hidden">
+          Deslizá horizontalmente para ver más secciones.
+        </div>
 
         {sections.map((section) => (
           <TabsContent key={section} value={section}>
-            <Card className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-4 sm:p-6">
+              {/* Form grid responsive */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {editData[section] &&
                   Object.keys(editData[section])
                     .sort()
                     .map((key) => (
-                      <div key={key} className={`space-y-2 ${LONG_FIELDS.includes(key) ? "md:col-span-2" : ""}`}>
-                        <Label>{FIELD_LABELS[key] || key}</Label>
+                      <div
+                        key={key}
+                        className={[
+                          "space-y-2 min-w-0",
+                          LONG_FIELDS.includes(key)
+                            ? "lg:col-span-2"
+                            : "",
+                        ].join(" ")}
+                      >
+                        <Label className="block text-sm">
+                          {FIELD_LABELS[key] || key}
+                        </Label>
+
                         {LONG_FIELDS.includes(key) ? (
                           <Textarea
                             value={editData[section][key]}
-                            onChange={(e) => handleChange(section, key, e.target.value)}
-                            rows={3}
+                            onChange={(e) =>
+                              handleChange(section, key, e.target.value)
+                            }
+                            rows={4}
+                            className="min-h-[110px]"
                           />
                         ) : (
                           <Input
                             value={editData[section][key]}
-                            onChange={(e) => handleChange(section, key, e.target.value)}
+                            onChange={(e) =>
+                              handleChange(section, key, e.target.value)
+                            }
                           />
                         )}
                       </div>
                     ))}
+              </div>
+
+              {/* Sticky action bar on mobile (optional UX improvement, no functionality change) */}
+              <div className="mt-6 sm:hidden sticky bottom-3">
+                <div className="rounded-lg border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3">
+                  <Button
+                    onClick={handleSave}
+                    disabled={!dirty || updateMutation.isPending}
+                    className="w-full"
+                  >
+                    {updateMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Guardar cambios
+                  </Button>
+                  {!dirty && (
+                    <p className="mt-2 text-xs text-muted-foreground text-center">
+                      No hay cambios pendientes.
+                    </p>
+                  )}
+                </div>
               </div>
             </Card>
           </TabsContent>

@@ -2,9 +2,24 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useMemo } from "react";
 
 export const CtaSection = () => {
   const { data: c } = useSiteContent("cta");
+
+  // Small performance + cleanliness: compute fallbacks once (no behavior change)
+  const content = useMemo(
+    () => ({
+      badgeText: c?.badge_text ?? "Únete hoy",
+      title: c?.title ?? "¿Listo para comenzar?",
+      subtitle:
+        c?.subtitle ??
+        "Únete a miles de clientes satisfechos y descubre por qué somos la tienda preferida para productos premium.",
+      ctaPrimary: c?.cta_primary ?? "Comenzar a comprar",
+      ctaSecondary: c?.cta_secondary ?? "Explorar categorías",
+    }),
+    [c]
+  );
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -21,25 +36,35 @@ export const CtaSection = () => {
       <div className="container relative text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/20 text-primary-foreground text-sm font-medium mb-6">
           <Sparkles className="h-4 w-4" />
-          <span>{c?.badge_text ?? "Únete hoy"}</span>
+          <span>{content.badgeText}</span>
         </div>
 
         <h2 className="font-serif text-3xl md:text-5xl font-bold mb-6 text-primary-foreground">
-          {c?.title ?? "¿Listo para comenzar?"}
+          {content.title}
         </h2>
         <p className="text-lg md:text-xl text-primary-foreground/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-          {c?.subtitle ?? "Únete a miles de clientes satisfechos y descubre por qué somos la tienda preferida para productos premium."}
+          {content.subtitle}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" variant="secondary" className="group text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" asChild>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="group text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+            asChild
+          >
             <Link to="/products">
-              {c?.cta_primary ?? "Comenzar a comprar"}
+              {content.ctaPrimary}
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
-          <Button size="lg" className="text-base px-8 py-6 rounded-xl border-2 border-primary-foreground/30 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-all duration-300" asChild>
-            <Link to="/categories">{c?.cta_secondary ?? "Explorar categorías"}</Link>
+
+          <Button
+            size="lg"
+            className="text-base px-8 py-6 rounded-xl border-2 border-primary-foreground/30 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-all duration-300"
+            asChild
+          >
+            <Link to="/categories">{content.ctaSecondary}</Link>
           </Button>
         </div>
       </div>

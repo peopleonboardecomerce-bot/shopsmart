@@ -8,40 +8,52 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useCallback, useMemo } from "react";
 
 const CartPage = () => {
   const navigate = useNavigate();
   const { items, subtotal, total, totalItems } = useCart();
   const { isAuthenticated } = useAuth();
 
-  const handleCheckout = () => {
+  const isEmpty = items.length === 0;
+
+  // Defensive formatting (avoid edge cases if values come as strings/undefined)
+  const money = useCallback((value: unknown) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+  }, []);
+
+  // Optional: stable navigation handler to prevent re-renders in children
+  const handleCheckout = useCallback(() => {
     if (!isAuthenticated) {
       toast.info("Inicia sesión para continuar con el checkout");
       navigate("/auth", { state: { returnTo: "/checkout" } });
       return;
     }
     navigate("/checkout");
-  };
+  }, [isAuthenticated, navigate]);
+
+  // Optional: ensure stable list rendering if CartItem uses memoization
+  const renderedItems = useMemo(
+    () => items.map((item) => <CartItem key={item.product.id} item={item} />),
+    [items]
+  );
 
   return (
     <Layout>
       <div className="container py-8">
         <h1 className="font-serif text-3xl font-bold mb-8">Carrito de Compra</h1>
 
-        {items.length > 0 ? (
+        {!isEmpty ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">
-                    Productos ({totalItems})
-                  </CardTitle>
+                  <CardTitle className="text-lg">Productos ({totalItems})</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {items.map((item) => (
-                    <CartItem key={item.product.id} item={item} />
-                  ))}
+                <CardContent className="space-y-2">
+                  {renderedItems}
                 </CardContent>
               </Card>
             </div>
@@ -55,21 +67,26 @@ const CartPage = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>${money(subtotal)}</span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Envío</span>
                     <span className="text-muted-foreground">Se calcula en checkout</span>
                   </div>
+
                   <Separator />
+
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>${money(total)}</span>
                   </div>
+
                   <Button className="w-full" size="lg" onClick={handleCheckout}>
                     Continuar al checkout
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
+
                   <Button variant="outline" className="w-full" asChild>
                     <Link to="/products">Seguir comprando</Link>
                   </Button>

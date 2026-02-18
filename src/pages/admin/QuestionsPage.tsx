@@ -42,10 +42,12 @@ export const QuestionsPage = () => {
     queryFn: async () => {
       let query = supabase
         .from("product_questions")
-        .select(`
+        .select(
+          `
           *,
           products:product_id (title)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (filter === "pending") {
@@ -61,8 +63,16 @@ export const QuestionsPage = () => {
   });
 
   const answerMutation = useMutation({
-    mutationFn: async ({ questionId, answer }: { questionId: string; answer: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+    mutationFn: async ({
+      questionId,
+      answer,
+    }: {
+      questionId: string;
+      answer: string;
+    }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
       const { error } = await supabase
@@ -118,16 +128,20 @@ export const QuestionsPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Preguntas</h1>
-          <p className="text-muted-foreground">
+      {/* Header responsive */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+            Preguntas
+          </h1>
+          <p className="text-sm text-muted-foreground">
             Gestiona las preguntas de los clientes sobre productos
           </p>
         </div>
       </div>
 
-      <div className="flex gap-2">
+      {/* Filters responsive: wrap on mobile */}
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={filter === "pending" ? "default" : "outline"}
           onClick={() => setFilter("pending")}
@@ -167,34 +181,50 @@ export const QuestionsPage = () => {
       ) : (
         <div className="space-y-4">
           {questions?.map((question) => (
-            <Card key={question.id}>
+            <Card key={question.id} className="overflow-hidden">
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <CardTitle className="text-base font-medium">
+                {/* Stack on mobile, row on sm+ */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <CardTitle className="text-base font-medium truncate">
                       {question.products?.title || "Producto eliminado"}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(question.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", {
-                        locale: es,
-                      })}
+                      {format(
+                        new Date(question.created_at),
+                        "d 'de' MMMM, yyyy 'a las' HH:mm",
+                        { locale: es },
+                      )}
                     </p>
                   </div>
-                  <Badge variant={question.answer ? "secondary" : "destructive"}>
-                    {question.answer ? "Respondida" : "Pendiente"}
-                  </Badge>
+
+                  <div className="flex items-center justify-start sm:justify-end">
+                    <Badge
+                      variant={question.answer ? "secondary" : "destructive"}
+                      className="whitespace-nowrap"
+                    >
+                      {question.answer ? "Respondida" : "Pendiente"}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
+
               <CardContent className="space-y-4">
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm font-medium mb-1">Pregunta:</p>
-                  <p className="text-foreground">{question.question}</p>
+                  <p className="text-foreground break-words">
+                    {question.question}
+                  </p>
                 </div>
 
                 {question.answer && (
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                    <p className="text-sm font-medium mb-1 text-primary">Respuesta:</p>
-                    <p className="text-foreground">{question.answer}</p>
+                    <p className="text-sm font-medium mb-1 text-primary">
+                      Respuesta:
+                    </p>
+                    <p className="text-foreground break-words">
+                      {question.answer}
+                    </p>
                     {question.answered_at && (
                       <p className="text-xs text-muted-foreground mt-2">
                         Respondida el{" "}
@@ -206,10 +236,12 @@ export const QuestionsPage = () => {
                   </div>
                 )}
 
+                {/* Button full width on mobile */}
                 <Button
                   onClick={() => openAnswerDialog(question)}
                   variant={question.answer ? "outline" : "default"}
                   size="sm"
+                  className="w-full sm:w-auto"
                 >
                   <Check className="h-4 w-4 mr-2" />
                   {question.answer ? "Editar respuesta" : "Responder"}
@@ -220,22 +252,30 @@ export const QuestionsPage = () => {
         </div>
       )}
 
-      <Dialog open={!!selectedQuestion} onOpenChange={() => setSelectedQuestion(null)}>
-        <DialogContent className="sm:max-w-lg">
+      <Dialog
+        open={!!selectedQuestion}
+        onOpenChange={() => setSelectedQuestion(null)}
+      >
+        {/* ✅ Responsive dialog width */}
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Responder pregunta</DialogTitle>
           </DialogHeader>
 
           {selectedQuestion && (
             <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Producto:</p>
-                <p className="font-medium">{selectedQuestion.products?.title}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Producto:
+                </p>
+                <p className="font-medium truncate">
+                  {selectedQuestion.products?.title || "Producto eliminado"}
+                </p>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm font-medium mb-1">Pregunta:</p>
-                <p>{selectedQuestion.question}</p>
+                <p className="break-words">{selectedQuestion.question}</p>
               </div>
 
               <div>
@@ -248,7 +288,7 @@ export const QuestionsPage = () => {
                     }
                   }}
                   placeholder="Escribe tu respuesta aquí..."
-                  rows={4}
+                  rows={5}
                   maxLength={2000}
                 />
                 <p className="text-xs text-muted-foreground mt-1 text-right">
@@ -258,13 +298,19 @@ export const QuestionsPage = () => {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
+          {/* ✅ Footer buttons stack on mobile */}
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedQuestion(null)}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
             <Button
               onClick={handleAnswer}
               disabled={!answerText.trim() || answerMutation.isPending}
+              className="w-full sm:w-auto"
             >
               {answerMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

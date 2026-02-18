@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,8 @@ export const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
+    setLoading(true);
+
     // First fetch orders
     const { data: ordersData, error: ordersError } = await supabase
       .from("orders")
@@ -105,9 +107,12 @@ export const OrdersPage = () => {
 
       // Fetch emails via edge function (admin only)
       try {
-        const { data: emailData } = await supabase.functions.invoke("get-user-emails", {
-          body: { userIds },
-        });
+        const { data: emailData } = await supabase.functions.invoke(
+          "get-user-emails",
+          {
+            body: { userIds },
+          },
+        );
         if (emailData?.emails) {
           emails = emailData.emails;
         }
@@ -121,11 +126,14 @@ export const OrdersPage = () => {
       user_id: order.user_id,
       status: order.status,
       total: Number(order.total),
-      shipping_address: order.shipping_address as unknown as ShippingAddress | null,
+      shipping_address:
+        (order.shipping_address as unknown as ShippingAddress | null) ?? null,
       items: (order.items as unknown as OrderItem[]) || [],
       created_at: order.created_at,
       profile_email: order.user_id ? emails[order.user_id] || undefined : undefined,
-      profile_name: order.user_id ? profiles[order.user_id]?.full_name || undefined : undefined,
+      profile_name: order.user_id
+        ? profiles[order.user_id]?.full_name || undefined
+        : undefined,
     }));
 
     setOrders(ordersWithProfiles);
@@ -160,107 +168,163 @@ export const OrdersPage = () => {
     );
   };
 
+  const headerTitle = useMemo(() => "Pedidos", []);
+
   return (
-    <div>
-      <h1 className="font-serif text-3xl font-bold mb-8">Pedidos</h1>
+    <div className="space-y-6">
+      {/* Header responsive */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold truncate">
+            {headerTitle}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Gestiona el estado y revisa el detalle de cada pedido.
+          </p>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">No hay pedidos todavía.</p>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="w-24">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-mono text-sm">
-                    {order.id.slice(0, 8)}...
-                  </TableCell>
-                  <TableCell>
-                    {order.profile_name || order.profile_email || "Usuario eliminado"}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(order.created_at), "dd MMM yyyy", { locale: es })}
-                  </TableCell>
-                  <TableCell>€{order.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) => handleStatusChange(order.id, value)}
-                    >
-                      <SelectTrigger className="w-36">
-                        <SelectValue>{getStatusBadge(order.status)}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
-                            {status.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+        <div className="rounded-lg border overflow-hidden">
+          {/* ✅ Mobile-friendly: horizontal scroll for table */}
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[920px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[140px]">ID</TableHead>
+                  <TableHead className="min-w-[240px]">Cliente</TableHead>
+                  <TableHead className="w-[160px]">Fecha</TableHead>
+                  <TableHead className="w-[140px]">Total</TableHead>
+                  <TableHead className="w-[220px]">Estado</TableHead>
+                  <TableHead className="w-[110px] text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-mono text-sm">
+                      <span className="inline-block max-w-[120px] truncate align-bottom">
+                        {order.id.slice(0, 8)}...
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="min-w-0">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {order.profile_name ||
+                            order.profile_email ||
+                            "Usuario eliminado"}
+                        </p>
+                        {order.profile_email && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {order.profile_email}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      {format(new Date(order.created_at), "dd MMM yyyy", {
+                        locale: es,
+                      })}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      €{order.total.toFixed(2)}
+                    </TableCell>
+
+                    <TableCell>
+                      {/* ✅ Keep current functionality; just ensure it fits */}
+                      <Select
+                        value={order.status}
+                        onValueChange={(value) =>
+                          handleStatusChange(order.id, value)
+                        }
+                      >
+                        <SelectTrigger className="w-44">
+                          {/* keep badge, but ensure truncation */}
+                          <SelectValue>
+                            <span className="inline-flex items-center max-w-full">
+                              {getStatusBadge(order.status)}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedOrder(order)}
+                        aria-label="Ver pedido"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* ✅ Hint for small screens */}
+          <div className="px-4 py-3 text-xs text-muted-foreground border-t sm:hidden">
+            Deslizá horizontalmente para ver toda la tabla.
+          </div>
         </div>
       )}
 
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        {/* ✅ Responsive dialog width */}
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalles del Pedido</DialogTitle>
           </DialogHeader>
+
           {selectedOrder && (
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
+              {/* ✅ Stack on mobile, 2 cols on md */}
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">ID del Pedido</p>
-                  <p className="font-mono">{selectedOrder.id}</p>
+                  <p className="font-mono text-sm break-all">{selectedOrder.id}</p>
                 </div>
+
                 <div>
                   <p className="text-sm text-muted-foreground">Fecha</p>
-                  <p>
+                  <p className="whitespace-nowrap">
                     {format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm", {
                       locale: es,
                     })}
                   </p>
                 </div>
-                <div>
+
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Cliente</p>
-                  <p>
-                    {selectedOrder.profile_name || "N/A"}
-                    <br />
-                    <span className="text-sm text-muted-foreground">
+                  <p className="truncate">{selectedOrder.profile_name || "N/A"}</p>
+                  {selectedOrder.profile_email && (
+                    <p className="text-sm text-muted-foreground truncate">
                       {selectedOrder.profile_email}
-                    </span>
-                  </p>
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <p className="text-sm text-muted-foreground">Estado</p>
                   <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
@@ -269,33 +333,51 @@ export const OrdersPage = () => {
 
               {selectedOrder.shipping_address && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Dirección de Envío</p>
-                  <div className="bg-muted p-3 rounded-lg text-sm">
-                    <p>{selectedOrder.shipping_address.fullName}</p>
-                    <p>{selectedOrder.shipping_address.address}</p>
-                    <p>
-                      {selectedOrder.shipping_address.postalCode}{" "}
-                      {selectedOrder.shipping_address.city}
-                    </p>
-                    <p>{selectedOrder.shipping_address.phone}</p>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Dirección de Envío
+                  </p>
+                  <div className="bg-muted p-3 rounded-lg text-sm space-y-0.5">
+                    {selectedOrder.shipping_address.fullName && (
+                      <p className="font-medium">{selectedOrder.shipping_address.fullName}</p>
+                    )}
+                    {selectedOrder.shipping_address.address && (
+                      <p>{selectedOrder.shipping_address.address}</p>
+                    )}
+                    {(selectedOrder.shipping_address.postalCode ||
+                      selectedOrder.shipping_address.city) && (
+                      <p>
+                        {selectedOrder.shipping_address.postalCode}{" "}
+                        {selectedOrder.shipping_address.city}
+                      </p>
+                    )}
+                    {selectedOrder.shipping_address.phone && (
+                      <p>{selectedOrder.shipping_address.phone}</p>
+                    )}
                   </div>
                 </div>
               )}
 
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Productos</p>
-                <div className="border rounded-lg divide-y">
+                <div className="border rounded-lg divide-y overflow-hidden">
                   {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex justify-between p-3">
-                      <span>
-                        {item.title} x{item.quantity}
+                    <div
+                      key={index}
+                      className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between p-3"
+                    >
+                      <span className="min-w-0 truncate">
+                        {item.title} <span className="text-muted-foreground">x{item.quantity}</span>
                       </span>
-                      <span>€{(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="whitespace-nowrap">
+                        €{(item.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   ))}
-                  <div className="flex justify-between p-3 font-bold">
+                  <div className="flex items-center justify-between p-3 font-bold">
                     <span>Total</span>
-                    <span>€{selectedOrder.total.toFixed(2)}</span>
+                    <span className="whitespace-nowrap">
+                      €{selectedOrder.total.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>

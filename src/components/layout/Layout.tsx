@@ -1,15 +1,23 @@
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { ReactNode } from "react";
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1">{children}</main>
+
+      <main
+        id="main-content"
+        className="flex-1 w-full"
+      >
+        {children}
+      </main>
+
       <Footer />
     </div>
   );

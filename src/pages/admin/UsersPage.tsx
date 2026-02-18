@@ -27,6 +27,8 @@ export const UsersPage = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = async () => {
+    setLoading(true);
+
     // First fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
@@ -54,9 +56,12 @@ export const UsersPage = () => {
 
     if (userIds.length > 0) {
       try {
-        const { data: emailData } = await supabase.functions.invoke("get-user-emails", {
-          body: { userIds },
-        });
+        const { data: emailData } = await supabase.functions.invoke(
+          "get-user-emails",
+          {
+            body: { userIds },
+          },
+        );
         if (emailData?.emails) {
           emails = emailData.emails;
         }
@@ -82,65 +87,95 @@ export const UsersPage = () => {
   }, []);
 
   return (
-    <div>
-      <h1 className="font-serif text-3xl font-bold mb-8">Usuarios</h1>
+    <div className="space-y-6">
+      {/* Header responsive */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold truncate">
+            Usuarios
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Lista de usuarios registrados y su rol.
+          </p>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">No hay usuarios todavía.</p>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Fecha de registro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {user.isAdmin ? (
-                        <Shield className="h-4 w-4 text-primary" />
-                      ) : (
-                        <User className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="font-medium">
-                        {user.full_name || "Sin nombre"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.email || "-"}</TableCell>
-                  <TableCell>
-                    {user.isAdmin ? (
-                      <Badge className="bg-primary">Admin</Badge>
-                    ) : (
-                      <Badge variant="secondary">Usuario</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(user.created_at), "dd MMM yyyy", { locale: es })}
-                  </TableCell>
+        <div className="rounded-lg border overflow-hidden">
+          {/* ✅ Mobile-friendly: horizontal scroll */}
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[860px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[260px]">Usuario</TableHead>
+                  <TableHead className="min-w-[280px]">Email</TableHead>
+                  <TableHead className="w-[140px]">Rol</TableHead>
+                  <TableHead className="w-[180px]">Fecha de registro</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {user.isAdmin ? (
+                          <Shield className="h-4 w-4 text-primary shrink-0" />
+                        ) : (
+                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+
+                        <span className="font-medium truncate">
+                          {user.full_name || "Sin nombre"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="min-w-0">
+                      <span className="block truncate">
+                        {user.email || "-"}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      {user.isAdmin ? (
+                        <Badge className="bg-primary">Admin</Badge>
+                      ) : (
+                        <Badge variant="secondary">Usuario</Badge>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      {format(new Date(user.created_at), "dd MMM yyyy", {
+                        locale: es,
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* ✅ Hint for small screens */}
+          <div className="px-4 py-3 text-xs text-muted-foreground border-t sm:hidden">
+            Deslizá horizontalmente para ver toda la tabla.
+          </div>
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-muted rounded-lg">
+      <div className="rounded-lg border bg-muted p-4">
         <p className="text-sm text-muted-foreground">
-          <strong>Nota:</strong> Para asignar el rol de administrador a un usuario, 
-          contacta con el equipo técnico o hazlo directamente desde el panel de base de datos.
+          <strong>Nota:</strong> Para asignar el rol de administrador a un
+          usuario, contacta con el equipo técnico o hazlo directamente desde el
+          panel de base de datos.
         </p>
       </div>
     </div>
