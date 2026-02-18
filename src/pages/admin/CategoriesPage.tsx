@@ -213,9 +213,7 @@ export const CategoriesPage = () => {
         </div>
       ) : (
         <div className="border rounded-lg">
-          {/* responsive wrapper for horizontal scroll */}
-          <div className="w-full overflow-x-auto">
-            <Table>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Imagen</TableHead>
@@ -250,7 +248,6 @@ export const CategoriesPage = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(category)}
-                        className="h-10 w-10"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -258,7 +255,6 @@ export const CategoriesPage = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(category.id)}
-                        className="h-10 w-10"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -268,8 +264,7 @@ export const CategoriesPage = () => {
               ))}
             </TableBody>
           </Table>
-            </div>
-          </div>
+        </div>
       )}
     </div>
   );

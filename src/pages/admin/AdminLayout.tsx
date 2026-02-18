@@ -29,7 +29,6 @@ const navItems = [
 export const AdminLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { isLoading, isAdmin, isAuthenticated } = useAdminCheck();
 
   if (isLoading) {
@@ -46,21 +45,11 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* mobile header with hamburger to open drawer */}
-      <div className="md:hidden flex items-center p-4 bg-card border-b border-border">
-        <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)}>
-          <Menu />
-        </Button>
-        <Link to="/" className="ml-2 font-serif text-xl font-bold text-primary">
-          PeopleOnBoard
-        </Link>
-      </div>
-
-      {/* Sidebar for md+ screens, collapsible width */}
+      {/* Sidebar */}
       <aside
         className={cn(
-          "hidden md:fixed md:left-0 md:top-0 md:z-40 md:h-screen md:border-r md:border-border md:bg-card md:transition-all md:duration-300",
-          sidebarOpen ? "md:w-64" : "md:w-16"
+          "fixed left-0 top-0 z-40 h-screen border-r border-border bg-card transition-all duration-300",
+          sidebarOpen ? "w-64" : "w-16"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-border px-4">
@@ -115,55 +104,14 @@ export const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* mobile drawer overlay */}
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="w-64 bg-card border-r border-border p-4">
-            <div className="flex items-center justify-between mb-4">
-              <Link to="/" className="font-serif text-xl font-bold text-primary">
-                PeopleOnBoard
-              </Link>
-              <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(false)}>
-                <X />
-              </Button>
-            </div>
-            <nav className="space-y-2">
-              {navItems.map((item) => {
-                const isActive =
-                  location.pathname === item.href ||
-                  (item.href !== "/admin" && location.pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                    onClick={() => setMobileSidebarOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-          <div className="flex-1" onClick={() => setMobileSidebarOpen(false)} />
-        </div>
-      )}
-
       {/* Main Content */}
       <main
         className={cn(
           "min-h-screen transition-all duration-300",
-          "md:ml-0",
-          sidebarOpen ? "md:ml-64" : "md:ml-16"
+          sidebarOpen ? "ml-64" : "ml-16"
         )}
       >
-        <div className="p-8 md:p-8">
+        <div className="p-8">
           <Outlet />
         </div>
       </main>
